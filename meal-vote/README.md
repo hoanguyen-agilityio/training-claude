@@ -7,8 +7,8 @@ daily cut-off.
 Stack mirrors `apps/kitchen` in the Space monorepo: **Astro 5** with **React 19** islands,
 **TypeScript** (strict), **Tailwind CSS 3**, and **Vitest** with Testing Library.
 
-> The app ships with three **seeded bugs** on purpose (one each in code, data and config). They
-> are tracked as GitLab issues #2, #3 and #4 under #1. Don't fix them outside their own ticket.
+> The app shipped with three **seeded bugs** on purpose (one each in code, data and config),
+> tracked as GitLab issues #2, #3 and #4 under #1. All three are fixed; see below.
 
 ## Getting started
 
@@ -70,15 +70,14 @@ Conventions follow Kitchen: grouped imports with `// Libs`, `// Components`, `//
 `// Types`, `// Styles` comments; named exports; class names come from a `variantTheme` map keyed by
 `BaseVariant`, with the styles in co-located `@apply` CSS.
 
-## Reproducing the seeded bugs
+## Seeded bugs (fixed)
 
 Run `pnpm dev`, open http://localhost:4321 and pick a day.
 
-| Day | What you see | Ticket |
-|---|---|---|
-| Monday | *Cơm tấm* wins with 2 votes; the tally lists `“Phở bò”`, `“phở bò”` and `“Phở bò ”` separately | #2 |
-| Tuesday | "Couldn't compute the results for this day" with `TypeError: Cannot read properties of null (reading 'at')` | #3 |
-| Wednesday | *Cơm tấm* wins 4–3; votes at 11:20, 11:35 and 11:48 show **Counted: Yes** | #4 |
+| Day | Before the fix | After the fix | Ticket |
+|---|---|---|---|
+| Monday | *Cơm tấm* won with 2 votes; `“Phở bò”`, `“phở bò”` and `“Phở bò ”` were tallied separately | *Phở bò* wins with 3 votes | #2 (code) |
+| Tuesday | `TypeError: Cannot read properties of null (reading 'at')` | *Bún bò* 3 – *Cơm gà* 2; an invalid record now fails with its index | #3 (data) |
+| Wednesday | *Cơm tấm* won 4–3; votes at 11:20, 11:35 and 11:48 were counted | *Bún chả* wins 3–1 | #4 (config) |
 
-Tests assert only correct behaviour (with the office's UTC+7 config passed explicitly), so they
-pass today and keep passing after each fix. Each bug ticket asks for its own failing test.
+Each fix has a test that failed before it and passes after it.
