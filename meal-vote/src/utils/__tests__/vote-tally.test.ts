@@ -1,6 +1,9 @@
 // Libs
 import { describe, expect, test } from 'vitest';
 
+// Services
+import { getVoteExport } from '@/services/vote-export';
+
 // Utils
 import { isOnTime, pickWinner, tallyVotes } from '@/utils/vote-tally';
 
@@ -12,6 +15,7 @@ const OFFICE_CONFIG: VotingConfig = { closesAt: '11:00', utcOffsetHours: 7 };
 
 const PHO = 'Phở bò';
 const COM_TAM = 'Cơm tấm';
+const BUN_CHA = 'Bún chả';
 
 const vote = (user: string, meal: string, localTime: string): Vote => ({
   user,
@@ -73,5 +77,18 @@ describe('pickWinner', () => {
       meal: null,
       votes: 0,
     });
+  });
+});
+
+describe('shipped voting config', () => {
+  test('counts a vote at 11:00 office time but not one at 11:01', () => {
+    // The cut-off is 11:00 in Vietnam time (UTC+7), not UTC
+    expect(isOnTime(vote('an', PHO, '11:00'))).toBe(true);
+    expect(isOnTime(vote('an', PHO, '11:01'))).toBe(false);
+  });
+
+  test('gives Wednesday to bún chả once late votes are dropped', () => {
+    // Three cơm tấm votes came in after 11:00 and must not count
+    expect(pickWinner(getVoteExport('wednesday'))).toEqual({ meal: BUN_CHA, votes: 3 });
   });
 });
