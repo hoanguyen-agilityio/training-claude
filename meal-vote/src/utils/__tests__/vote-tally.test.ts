@@ -14,6 +14,8 @@ import type { Vote, VotingConfig } from '@/types';
 const OFFICE_CONFIG: VotingConfig = { closesAt: '11:00', utcOffsetHours: 7 };
 
 const PHO = 'Phở bò';
+const PHO_LOWERCASE = 'phở bò';
+const PHO_PADDED = '  Phở  bò ';
 const COM_TAM = 'Cơm tấm';
 const BUN_CHA = 'Bún chả';
 
@@ -53,6 +55,19 @@ describe('tallyVotes', () => {
     expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 2, [COM_TAM]: 1 });
   });
 
+  test('counts names that differ only in case or spacing as one meal', () => {
+    // Three spellings of phở bò are one meal, shown with the first spelling
+    const votes = [
+      vote('an', PHO, '09:41'),
+      vote('binh', PHO_LOWERCASE, '09:58'),
+      vote('chi', PHO_PADDED, '10:12'),
+      vote('dung', COM_TAM, '10:20'),
+      vote('em', COM_TAM, '10:33'),
+    ];
+
+    expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 3, [COM_TAM]: 2 });
+  });
+
   test('returns an empty tally when there are no votes', () => {
     // Nothing to count
     expect(tallyVotes([], OFFICE_CONFIG)).toEqual({});
@@ -90,5 +105,12 @@ describe('shipped voting config', () => {
   test('gives Wednesday to bún chả once late votes are dropped', () => {
     // Three cơm tấm votes came in after 11:00 and must not count
     expect(pickWinner(getVoteExport('wednesday'))).toEqual({ meal: BUN_CHA, votes: 3 });
+  });
+});
+
+describe('shipped vote exports', () => {
+  test('gives Monday to phở bò across its spellings', () => {
+    // Monday's export spells phở bò three ways
+    expect(pickWinner(getVoteExport('monday'))).toEqual({ meal: PHO, votes: 3 });
   });
 });

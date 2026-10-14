@@ -6,6 +6,13 @@ import type { Vote, VoteTally, VotingConfig, Winner } from '@/types';
 
 const MINUTES_IN_DAY = 24 * 60;
 
+/** Collapses runs of whitespace and trims, so "Phở  bò " reads as "Phở bò". */
+const tidyMealName = (meal: string): string =>
+  meal.normalize('NFC').replace(/\s+/g, ' ').trim();
+
+/** Voters type meal names freely; case and spacing must not split one meal into several. */
+const toMealKey = (meal: string): string => tidyMealName(meal).toLocaleLowerCase('vi');
+
 /** A vote counts only if it was cast before the daily cut-off, in office local time. */
 export const isOnTime = (
   vote: Vote,
@@ -25,10 +32,15 @@ export const tallyVotes = (
   config: VotingConfig = votingConfig,
 ): VoteTally => {
   const counts: VoteTally = {};
+  // The first spelling seen for a meal is the one shown in the results
+  const labels = new Map<string, string>();
 
   for (const vote of votes) {
     if (!isOnTime(vote, config)) continue;
-    counts[vote.meal] = (counts[vote.meal] ?? 0) + 1;
+    const key = toMealKey(vote.meal);
+    const label = labels.get(key) ?? tidyMealName(vote.meal);
+    labels.set(key, label);
+    counts[label] = (counts[label] ?? 0) + 1;
   }
 
   return counts;
