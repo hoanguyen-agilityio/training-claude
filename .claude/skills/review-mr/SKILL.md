@@ -24,9 +24,9 @@ Review MR `$ARGUMENTS` of `gitlab.asoft-python.com/hoa.nguyen/training-claude`.
 
 - **Review-only** (default): print the review in chat. Never edit, commit or push the MR branch,
   and never write to GitLab.
-- **`--reply`**: after the review, draft one MR comment in English, show it to the user, and post
-  it only after the user says yes in chat. Posting is outward-facing; one approval covers one
-  comment.
+- **`--reply`**: after the review, draft the inline MR comments (see section 7), show them to the
+  user, and post them only after the user says yes in chat, or when the request itself asked to
+  leave comments on the MR. Posting is outward-facing; one approval covers one batch.
 
 `--target <branch>` sets the target branch when the MR metadata isn't available. Default: `main`.
 
@@ -156,8 +156,37 @@ Verdict rules: any Critical or Important finding → **Request changes**; only S
 **Comment**; nothing found and all gates green → **Approve**. If nothing was found, say so plainly;
 don't invent findings to fill the template.
 
-## 7. `--reply` only
+## 7. `--reply` only: comment format
 
-Draft the comment in **English**, using the same structure. Show it in chat and ask:
-"Post this comment to MR !$IID?" Post only after a clear yes, then confirm with the comment's URL.
+The team's review style (see granbull/space MR !3316): short inline threads, not a report.
+The chat report from section 6 stays in chat; GitLab gets only the comments below.
+
+**Rules**
+- One finding = one **inline diff comment** on the exact line (a GitLab discussion with a
+  `position` on the MR head), so the author can reply and resolve it there.
+- **1–2 sentences.** Name the problem, or ask why the code needs it. Questions are fine and often
+  better: "Why do we need this useEffect?", "Why do you need to change mock data?".
+- No severity labels, headings, bold, bullet lists or "Fix:" sections. No code blocks with the
+  fix; at most an inline `identifier`.
+- No evidence dumps (test runs, line counts). If the author asks, answer in the thread.
+- No summary note with the verdict. Findings that can't be anchored to a line in the diff (commit
+  split, stale docs outside the diff) go in **one** short general comment, still 1–2 sentences.
+- English, plain and polite: "please" is enough.
+
+**Examples**
+
+| Don't | Do |
+|---|---|
+| `**Critical: the validation error is swallowed.** getVoteExport now throws…` (8 lines + code) | `Why do we catch the error here? It hides the invalid-export message, so a broken export just shows no votes.` |
+| `**Suggestion:** OFFICE_TIME_ZONE is imported but never used in this file. Please remove…` | `Unused import, please remove.` |
+| `**Important: phantom assertion.** A bare toThrow() passes on any error. I copied…` | `` `toThrow()` passes on any error. Please check the message with the index. `` |
+
+**Posting** (browser with a signed-in GitLab session, CSRF token from the page):
+1. `GET …/merge_requests/$IID` for `diff_refs` (`base_sha`, `start_sha`, `head_sha`).
+2. For each finding, `POST …/merge_requests/$IID/discussions` with `body` and
+   `position: {position_type: "text", base_sha, start_sha, head_sha, old_path, new_path, new_line}`.
+   Use `new_line` from the MR head file (`git show origin/mr/$IID:<path> | grep -n`); comment only
+   on lines the MR added or changed.
+3. Confirm each response is 201 and report the MR link in chat.
+
 Never approve, merge or close the MR from this skill.
