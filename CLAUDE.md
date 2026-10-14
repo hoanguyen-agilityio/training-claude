@@ -46,9 +46,10 @@ machine runs Node 22.2.
 - No `any`. `as` casts only at external boundaries, with a comment (see `services/vote-export.ts`).
 - Tests: one comment per test explaining the case; repeated literals go in constants.
 
-### Seeded bugs: don't fix them by accident
+### Seeded bugs
 
-The app ships with three intentional bugs, each tracked by its own issue:
+The app shipped with three intentional bugs, each tracked by its own issue. All three are fixed
+(MR !1); keep their tests, since they guard the layer each bug lived in:
 
 | Issue | Layer | Where |
 |---|---|---|
@@ -56,7 +57,7 @@ The app ships with three intentional bugs, each tracked by its own issue:
 | #3 Results crash on Tuesday's vote export | Data | `src/data/votes-tuesday.json` |
 | #4 Votes cast after the 11:00 cut-off are still counted | Config | `src/config/voting.json` |
 
-- Fix a seeded bug only inside the task for its own issue, never as a side effect of other work.
+- One issue per commit: a fix and its test land together, referencing only that issue.
 - Every fix lands with a test that fails before the fix and passes after it.
 - Existing tests assert correct behaviour only (office config UTC+7 passed explicitly). Never
   change a test so that it accepts buggy output.
