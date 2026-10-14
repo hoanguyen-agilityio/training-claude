@@ -76,6 +76,8 @@ course.
 |---|---|---|
 | [AI Fluency: Framework & Foundations](anthropic-academy/ai-fluency-framework-foundations/README.md) | The 4D Framework for working with AI: Delegation, Description, Discernment, Diligence | 14 lessons · [course page](https://academy.claude.com/courses/ai-fluency-framework-foundations) |
 | [AI Capabilities and Limitations](anthropic-academy/ai-capabilities-and-limitations/README.md) | The four properties of generative AI: Next Token Prediction, Knowledge, Working Memory, Steerability | 13 lessons · ~3.5 h · [course page](https://academy.claude.com/courses/ai-capabilities-and-limitations) |
+| [Claude 101](anthropic-academy/claude-101/README.md) | Using Claude day to day: prompting, Projects, Artifacts, Skills, Connectors, Research, and the surfaces beyond claude.ai | 13 lessons · ~2 h · [course page](https://academy.claude.com/courses/claude-101) |
+| [Claude Code 101](anthropic-academy/claude-code-101/README.md) | Claude Code from the ground up: the agentic loop, permission modes, explore → plan → code → commit, context management, code review, and customizing with CLAUDE.md, subagents, skills, MCP and hooks | 12 lessons · ~1.5 h · [course page](https://academy.claude.com/courses/claude-code-101) |
 
 **Suggested order:** both courses stand alone. *AI Capabilities and Limitations* covers how the
 model behaves; *AI Fluency* covers the human skills that respond to that behavior. Taking them
