@@ -16,7 +16,7 @@ import { getVoteExport } from '@/services/vote-export';
 import { selectVoteDay, useSelectedDay } from '@/stores/hooks';
 
 // Types
-import { BaseVariant } from '@/types';
+import { BaseVariant, type VoteDay } from '@/types';
 
 // Styles
 import './styles/meal-vote-dashboard.css';
@@ -27,6 +27,11 @@ const variantTheme = {
   },
 };
 
+// Reads the export inside the error boundary, so an invalid export is shown as an error, not a blank page
+const DayExportResults = ({ day }: { day: VoteDay }) => (
+  <DayResults votes={getVoteExport(day)} config={votingConfig} />
+);
+
 interface MealVoteDashboardProps {
   variant?: BaseVariant;
 }
@@ -36,14 +41,13 @@ export const MealVoteDashboard = ({
 }: MealVoteDashboardProps) => {
   const theme = variantTheme[variant];
   const day = useSelectedDay();
-  const votes = getVoteExport(day);
 
   return (
     <div className={theme.root}>
       <DaySelector days={VOTE_DAYS} selected={day} onSelect={selectVoteDay} />
       {/* Keyed by day so a crash on one day doesn't stick when switching to another */}
       <ResultsErrorBoundary key={day}>
-        <DayResults votes={votes} config={votingConfig} />
+        <DayExportResults day={day} />
       </ResultsErrorBoundary>
     </div>
   );
