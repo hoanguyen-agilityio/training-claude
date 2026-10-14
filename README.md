@@ -46,12 +46,20 @@ and a quick-reference table at the end. Course summaries are written in Vietname
    git pull origin main
    ```
 
+## Practice app (AI Dojo)
+
+Hands-on work for the [AI Dojo](https://dojo.agilityio.dev/schedule.html) program happens in
+[`meal-vote/`](meal-vote/README.md): a small Kitchen-style app (Astro, React, TypeScript) used to
+practise ticket analysis, bug reproduction and fixing. Tickets live in this project's GitLab
+issues; work each one on its own branch and open an MR to `main`.
+
 ## Repository layout
 
 ```
 training-claude/
 ├── .gitignore                    # ignores anthropic-academy/ (notes stay local)
 ├── README.md                     # this file: index of all courses
+├── meal-vote/                    # practice app: Astro + React + TypeScript
 └── <source>/                     # where the course comes from, e.g. anthropic-academy (not committed)
     └── <course-slug>/            # slug matches the course URL
         └── README.md             # lesson-by-lesson summary + practice

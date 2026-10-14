@@ -1,0 +1,3 @@
+.meal-vote-dashboard-root {
+  @apply flex flex-col gap-6;
+}

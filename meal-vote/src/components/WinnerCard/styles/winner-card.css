@@ -1,0 +1,19 @@
+.winner-card-root {
+  @apply rounded-2xl bg-kitchen-primary p-6 text-white shadow-sm;
+}
+
+.winner-card-caption {
+  @apply text-sm opacity-85;
+}
+
+.winner-card-meal {
+  @apply mt-2 text-3xl font-bold;
+}
+
+.winner-card-votes {
+  @apply mt-1 text-lg font-medium;
+}
+
+.winner-card-empty {
+  @apply mt-2 text-xl font-semibold;
+}

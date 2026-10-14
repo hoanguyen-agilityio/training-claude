@@ -1,0 +1,23 @@
+.vote-tally-root {
+  @apply rounded-2xl border border-kitchen-line bg-kitchen-surface p-5;
+}
+
+.vote-tally-title {
+  @apply mb-3 text-lg font-semibold text-kitchen-ink;
+}
+
+.vote-tally-table {
+  @apply w-full border-collapse text-sm;
+}
+
+.vote-tally-head {
+  @apply border-b border-kitchen-line py-2 text-left font-medium text-kitchen-muted;
+}
+
+.vote-tally-cell {
+  @apply whitespace-pre border-b border-kitchen-line py-2;
+}
+
+.vote-tally-count {
+  @apply border-b border-kitchen-line py-2 font-semibold;
+}

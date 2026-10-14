@@ -1,0 +1,15 @@
+.results-error-root {
+  @apply rounded-2xl border border-kitchen-danger bg-red-50 p-6 text-kitchen-ink;
+}
+
+.results-error-title {
+  @apply text-lg font-semibold text-kitchen-danger;
+}
+
+.results-error-message {
+  @apply mt-3 overflow-x-auto rounded-lg bg-white p-3 font-mono text-sm;
+}
+
+.results-error-hint {
+  @apply mt-3 text-sm text-kitchen-muted;
+}

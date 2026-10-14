@@ -1,0 +1,19 @@
+.day-selector-root {
+  @apply flex flex-wrap gap-2;
+}
+
+.day-selector-option {
+  @apply flex flex-col items-start rounded-xl border border-kitchen-line bg-kitchen-surface px-4 py-2 text-left transition-colors hover:border-kitchen-primary;
+}
+
+.day-selector-option[aria-pressed='true'] {
+  @apply border-kitchen-primary bg-kitchen-primary text-white;
+}
+
+.day-selector-label {
+  @apply text-sm font-semibold;
+}
+
+.day-selector-date {
+  @apply text-xs opacity-75;
+}

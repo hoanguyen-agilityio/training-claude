@@ -1,0 +1,7 @@
+.day-results-root {
+  @apply flex flex-col gap-4;
+}
+
+.day-results-grid {
+  @apply grid gap-4 md:grid-cols-[1fr_2fr];
+}
