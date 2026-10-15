@@ -2,7 +2,7 @@ export enum BaseVariant {
   PRIMARY = 'primary',
 }
 
-export type VoteDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday';
+export type VoteDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday';
 
 export interface Vote {
   user: string;

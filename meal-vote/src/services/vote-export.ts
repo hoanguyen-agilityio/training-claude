@@ -3,6 +3,7 @@ import mondayExport from '@/data/votes-monday.json';
 import tuesdayExport from '@/data/votes-tuesday.json';
 import wednesdayExport from '@/data/votes-wednesday.json';
 import thursdayExport from '@/data/votes-thursday.json';
+import fridayExport from '@/data/votes-friday.json';
 
 // Types
 import type { Vote, VoteDay } from '@/types';
@@ -12,6 +13,7 @@ const EXPORTS: Record<VoteDay, unknown> = {
   tuesday: tuesdayExport,
   wednesday: wednesdayExport,
   thursday: thursdayExport,
+  friday: fridayExport,
 };
 
 const VOTE_FIELDS = ['user', 'meal', 'at'] as const;
