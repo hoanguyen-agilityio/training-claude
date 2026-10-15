@@ -5,6 +5,7 @@ export const VOTE_DAYS: VoteDayOption[] = [
   { id: 'monday', label: 'Monday', date: '2026-10-12' },
   { id: 'tuesday', label: 'Tuesday', date: '2026-10-13' },
   { id: 'wednesday', label: 'Wednesday', date: '2026-10-14' },
+  { id: 'thursday', label: 'Thursday', date: '2026-10-15' },
 ];
 
 export const DEFAULT_VOTE_DAY = VOTE_DAYS[0].id;
