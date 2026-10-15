@@ -1,6 +1,6 @@
 // Libs
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
 // Component
 import { VoteList } from '..';
@@ -26,6 +26,24 @@ describe('VoteList', () => {
     expect(within(onTimeRow).getByText('Yes')).toBeInTheDocument();
     expect(within(lateRow).getByText('11:20')).toBeInTheDocument();
     expect(within(lateRow).getByText('No')).toBeInTheDocument();
+  });
+
+  test('marks a vote replaced by the same user as not counted', () => {
+    // An changed their mind before the cut-off: only the later vote counts
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const votes: Vote[] = [
+      { user: 'an', meal: 'Bún chả', at: '2026-10-14T09:30:00+07:00' },
+      { user: 'an', meal: 'Cơm tấm', at: '2026-10-14T10:30:00+07:00' },
+    ];
+
+    render(<VoteList votes={votes} config={OFFICE_CONFIG} />);
+
+    const [, replacedRow, latestRow] = screen.getAllByRole('row');
+    expect(within(replacedRow).getByText('No')).toBeInTheDocument();
+    expect(within(latestRow).getByText('Yes')).toBeInTheDocument();
+    // Two rows for one user must not trip React's duplicate key warning
+    expect(errors).not.toHaveBeenCalled();
+    errors.mockRestore();
   });
 
   test('shows the number of votes in the heading', () => {
