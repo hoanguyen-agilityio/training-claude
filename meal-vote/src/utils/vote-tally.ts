@@ -66,20 +66,17 @@ export const tallyVotes = (
   return counts;
 };
 
+/** A tie names every tied meal, in alphabetical order so the export's row order has no say. */
 export const pickWinner = (
   votes: Vote[],
   config: VotingConfig = votingConfig,
 ): Winner => {
-  const counts = tallyVotes(votes, config);
-  let winner: string | null = null;
-  let best = 0;
+  const counts = Object.entries(tallyVotes(votes, config));
+  const best = Math.max(0, ...counts.map(([, count]) => count));
+  const meals = counts
+    .filter(([, count]) => count === best)
+    .map(([meal]) => meal)
+    .sort((a, b) => a.localeCompare(b, 'vi'));
 
-  for (const [meal, count] of Object.entries(counts)) {
-    if (count >= best) {
-      winner = meal;
-      best = count;
-    }
-  }
-
-  return { meal: winner, votes: best };
+  return { meals, votes: best };
 };

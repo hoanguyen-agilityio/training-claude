@@ -21,7 +21,8 @@ export interface VotingConfig {
 export type VoteTally = Record<string, number>;
 
 export interface Winner {
-  meal: string | null;
+  /** Every meal with the top count: empty when nobody voted on time, several on a tie */
+  meals: string[];
   votes: number;
 }
 
