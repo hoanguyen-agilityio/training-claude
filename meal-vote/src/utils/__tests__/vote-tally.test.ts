@@ -18,6 +18,8 @@ const PHO_LOWERCASE = 'phở bò';
 const PHO_PADDED = '  Phở  bò ';
 const COM_TAM = 'Cơm tấm';
 const BUN_CHA = 'Bún chả';
+const BUN_RIEU = 'Bún riêu';
+const COM_GA = 'Cơm gà';
 
 const vote = (user: string, meal: string, localTime: string): Vote => ({
   user,
@@ -68,6 +70,25 @@ describe('tallyVotes', () => {
     expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 3, [COM_TAM]: 2 });
   });
 
+  test('counts only the latest on-time vote of a user who voted more than once', () => {
+    // An voted phở twice and then switched to cơm tấm, so an counts once, for cơm tấm
+    const votes = [
+      vote('an', PHO, '09:30'),
+      vote('an', PHO, '09:31'),
+      vote('binh', PHO, '10:10'),
+      vote('an', COM_TAM, '10:40'),
+    ];
+
+    expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1, [COM_TAM]: 1 });
+  });
+
+  test('keeps the on-time vote when the same user votes again after the cut-off', () => {
+    // A late change of mind does not replace a vote cast in time
+    const votes = [vote('an', PHO, '10:30'), vote('an', COM_TAM, '11:15')];
+
+    expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
+  });
+
   test('returns an empty tally when there are no votes', () => {
     // Nothing to count
     expect(tallyVotes([], OFFICE_CONFIG)).toEqual({});
@@ -112,5 +133,11 @@ describe('shipped vote exports', () => {
   test('gives Monday to phở bò across its spellings', () => {
     // Monday's export spells phở bò three ways
     expect(pickWinner(getVoteExport('monday'))).toEqual({ meal: PHO, votes: 3 });
+  });
+
+  test('gives Thursday to bún riêu once each user counts once', () => {
+    // An voted cơm gà three times and giang switched to bún riêu; dung's late switch is ignored
+    expect(tallyVotes(getVoteExport('thursday'))).toEqual({ [BUN_RIEU]: 3, [COM_GA]: 2 });
+    expect(pickWinner(getVoteExport('thursday'))).toEqual({ meal: BUN_RIEU, votes: 3 });
   });
 });

@@ -27,6 +27,27 @@ export const isOnTime = (
   return (local + MINUTES_IN_DAY) % MINUTES_IN_DAY <= hours * 60 + minutes;
 };
 
+/**
+ * Each user has one vote per day: their latest on-time one. Earlier votes and votes after
+ * the cut-off do not count. Returns the counted votes in export order.
+ */
+export const selectCountedVotes = (
+  votes: Vote[],
+  config: VotingConfig = votingConfig,
+): Vote[] => {
+  const latestByUser = new Map<string, Vote>();
+
+  for (const vote of votes) {
+    if (!isOnTime(vote, config)) continue;
+    const current = latestByUser.get(vote.user);
+    if (!current || Date.parse(vote.at) >= Date.parse(current.at)) {
+      latestByUser.set(vote.user, vote);
+    }
+  }
+
+  return votes.filter((vote) => latestByUser.get(vote.user) === vote);
+};
+
 export const tallyVotes = (
   votes: Vote[],
   config: VotingConfig = votingConfig,
@@ -35,8 +56,7 @@ export const tallyVotes = (
   // The first spelling seen for a meal is the one shown in the results
   const labels = new Map<string, string>();
 
-  for (const vote of votes) {
-    if (!isOnTime(vote, config)) continue;
+  for (const vote of selectCountedVotes(votes, config)) {
     const key = toMealKey(vote.meal);
     const label = labels.get(key) ?? tidyMealName(vote.meal);
     labels.set(key, label);

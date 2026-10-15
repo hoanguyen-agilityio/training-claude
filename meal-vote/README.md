@@ -34,7 +34,8 @@ pnpm dev          # http://localhost:4321
 2. `MealVoteDashboard` reads the day with `useSelectedDay()` and loads that day's export through
    `getVoteExport()`.
 3. `DayResults` runs `tallyVotes()` / `pickWinner()` from `src/utils/vote-tally.ts`, which drop
-   votes after `closesAt` using the office offset from `src/config/voting.json`.
+   votes after `closesAt` using the office offset from `src/config/voting.json` and count each
+   user once, with their latest on-time vote.
 4. `WinnerCard`, `VoteTally` and `VoteList` render the result. Meal names are shown in quotes
    so stray spaces stay visible; `VoteList` shows each vote's office time and whether it counted.
 5. `ResultsErrorBoundary` turns a crash while computing results into a readable alert; the full

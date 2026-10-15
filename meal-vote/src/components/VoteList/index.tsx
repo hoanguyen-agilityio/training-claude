@@ -3,7 +3,7 @@ import clsx from 'clsx';
 
 // Utils
 import { formatOfficeTime } from '@/utils/format-time';
-import { isOnTime } from '@/utils/vote-tally';
+import { selectCountedVotes } from '@/utils/vote-tally';
 
 // Types
 import { BaseVariant, type Vote, type VotingConfig } from '@/types';
@@ -36,6 +36,7 @@ export const VoteList = ({
   variant = BaseVariant.PRIMARY,
 }: VoteListProps) => {
   const theme = variantTheme[variant];
+  const countedVotes = new Set(selectCountedVotes(votes, config));
 
   return (
     <section aria-label="Votes" className={theme.root}>
@@ -50,11 +51,12 @@ export const VoteList = ({
           </tr>
         </thead>
         <tbody>
-          {votes.map((vote) => {
-            const counted = isOnTime(vote, config);
+          {votes.map((vote, index) => {
+            const counted = countedVotes.has(vote);
 
             return (
-              <tr key={vote.user}>
+              // A user can appear on several rows, so the row position is the only stable key
+              <tr key={index}>
                 <td className={theme.cell}>{vote.user}</td>
                 <td className={clsx(theme.cell, theme.meal)}>“{vote.meal}”</td>
                 <td className={theme.cell}>{formatOfficeTime(vote.at)}</td>
