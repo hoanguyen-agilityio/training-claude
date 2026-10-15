@@ -26,17 +26,20 @@ export const WinnerCard = ({
   variant = BaseVariant.PRIMARY,
 }: WinnerCardProps) => {
   const theme = variantTheme[variant];
+  const { meals, votes } = winner;
+  const isTie = meals.length > 1;
 
   return (
     <section aria-label="Winner" className={theme.root}>
       <p className={theme.caption}>Today&apos;s lunch · votes until {closesAt}</p>
-      {winner.meal === null ? (
+      {meals.length === 0 ? (
         <p className={theme.empty}>No votes before the cut-off</p>
       ) : (
         <>
-          <p className={theme.meal}>{winner.meal}</p>
+          <p className={theme.meal}>{isTie ? `Tie: ${meals.join(', ')}` : meals[0]}</p>
           <p className={theme.votes}>
-            {winner.votes} {winner.votes === 1 ? 'vote' : 'votes'}
+            {votes} {votes === 1 ? 'vote' : 'votes'}
+            {isTie && ' each'}
           </p>
         </>
       )}

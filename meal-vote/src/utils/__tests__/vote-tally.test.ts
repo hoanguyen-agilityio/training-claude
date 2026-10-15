@@ -20,6 +20,8 @@ const COM_TAM = 'Cơm tấm';
 const BUN_CHA = 'Bún chả';
 const BUN_RIEU = 'Bún riêu';
 const COM_GA = 'Cơm gà';
+const BANH_MI = 'Bánh mì';
+const MI_QUANG = 'Mì Quảng';
 
 const vote = (user: string, meal: string, localTime: string): Vote => ({
   user,
@@ -104,13 +106,30 @@ describe('pickWinner', () => {
       vote('chi', COM_TAM, '10:40'),
     ];
 
-    expect(pickWinner(votes, OFFICE_CONFIG)).toEqual({ meal: PHO, votes: 2 });
+    expect(pickWinner(votes, OFFICE_CONFIG)).toEqual({ meals: [PHO], votes: 2 });
+  });
+
+  test('names every meal that shares the top count, in alphabetical order', () => {
+    // Mì Quảng and bánh mì tie on 2; the order must not follow the export
+    const votes = [
+      vote('an', MI_QUANG, '09:10'),
+      vote('binh', BANH_MI, '09:25'),
+      vote('chi', MI_QUANG, '09:40'),
+      vote('dung', BANH_MI, '10:00'),
+      vote('em', BUN_CHA, '10:20'),
+    ];
+
+    expect(pickWinner(votes, OFFICE_CONFIG)).toEqual({ meals: [BANH_MI, MI_QUANG], votes: 2 });
+    expect(pickWinner([...votes].reverse(), OFFICE_CONFIG)).toEqual({
+      meals: [BANH_MI, MI_QUANG],
+      votes: 2,
+    });
   });
 
   test('reports no winner when nobody voted on time', () => {
     // The only vote is late
     expect(pickWinner([vote('an', PHO, '11:30')], OFFICE_CONFIG)).toEqual({
-      meal: null,
+      meals: [],
       votes: 0,
     });
   });
@@ -125,19 +144,24 @@ describe('shipped voting config', () => {
 
   test('gives Wednesday to bún chả once late votes are dropped', () => {
     // Three cơm tấm votes came in after 11:00 and must not count
-    expect(pickWinner(getVoteExport('wednesday'))).toEqual({ meal: BUN_CHA, votes: 3 });
+    expect(pickWinner(getVoteExport('wednesday'))).toEqual({ meals: [BUN_CHA], votes: 3 });
   });
 });
 
 describe('shipped vote exports', () => {
+  test('gives Friday a tie between bánh mì and mì quảng', () => {
+    // Both meals have 2 votes; neither may win alone
+    expect(pickWinner(getVoteExport('friday'))).toEqual({ meals: [BANH_MI, MI_QUANG], votes: 2 });
+  });
+
   test('gives Monday to phở bò across its spellings', () => {
     // Monday's export spells phở bò three ways
-    expect(pickWinner(getVoteExport('monday'))).toEqual({ meal: PHO, votes: 3 });
+    expect(pickWinner(getVoteExport('monday'))).toEqual({ meals: [PHO], votes: 3 });
   });
 
   test('gives Thursday to bún riêu once each user counts once', () => {
     // An voted cơm gà three times and giang switched to bún riêu; dung's late switch is ignored
     expect(tallyVotes(getVoteExport('thursday'))).toEqual({ [BUN_RIEU]: 3, [COM_GA]: 2 });
-    expect(pickWinner(getVoteExport('thursday'))).toEqual({ meal: BUN_RIEU, votes: 3 });
+    expect(pickWinner(getVoteExport('thursday'))).toEqual({ meals: [BUN_RIEU], votes: 3 });
   });
 });
