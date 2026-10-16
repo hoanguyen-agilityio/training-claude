@@ -11,6 +11,7 @@ import type { Vote, VotingConfig } from '@/types';
 const OFFICE_CONFIG: VotingConfig = { closesAt: '11:00', utcOffsetHours: 7 };
 
 const AN = 'an';
+const AN_CAPITALISED = 'An';
 const BUN_CHA = 'Bún chả';
 const COM_TAM = 'Cơm tấm';
 const COUNTED = 'Yes';
@@ -54,6 +55,20 @@ describe('VoteList', () => {
     expect(within(latestRow).getByText(COUNTED)).toBeInTheDocument();
     // Two rows for one user must not trip React's duplicate key warning
     expect(errors).not.toHaveBeenCalled();
+  });
+
+  test('marks a vote replaced under a differently cased username as not counted', () => {
+    // "An" and "an" are one voter, so the earlier row no longer counts
+    const votes: Vote[] = [
+      { user: AN_CAPITALISED, meal: BUN_CHA, at: '2026-10-14T09:30:00+07:00' },
+      { user: AN, meal: COM_TAM, at: '2026-10-14T10:30:00+07:00' },
+    ];
+
+    render(<VoteList votes={votes} config={OFFICE_CONFIG} />);
+
+    const [, replacedRow, latestRow] = screen.getAllByRole('row');
+    expect(within(replacedRow).getByText(NOT_COUNTED)).toBeInTheDocument();
+    expect(within(latestRow).getByText(COUNTED)).toBeInTheDocument();
   });
 
   test('shows the number of votes in the heading', () => {

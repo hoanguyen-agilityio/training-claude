@@ -13,6 +13,9 @@ const tidyMealName = (meal: string): string =>
 /** Voters type meal names freely; case and spacing must not split one meal into several. */
 const toMealKey = (meal: string): string => tidyMealName(meal).toLocaleLowerCase('vi');
 
+/** "An", "an" and " an " are one voter: usernames ignore case and surrounding spaces. */
+const toUserKey = (user: string): string => user.normalize('NFC').trim().toLocaleLowerCase('vi');
+
 /** A vote counts only if it was cast before the daily cut-off, in office local time. */
 export const isOnTime = (
   vote: Vote,
@@ -28,7 +31,8 @@ export const isOnTime = (
 };
 
 /**
- * Each user has one vote per day: their latest on-time one. Earlier votes and votes after
+ * Each user has one vote per day: their latest on-time one. Usernames that differ only in
+ * case or surrounding spaces are the same user. Earlier votes and votes after
  * the cut-off do not count. Returns the counted votes in export order.
  */
 export const selectCountedVotes = (
@@ -39,13 +43,14 @@ export const selectCountedVotes = (
 
   for (const vote of votes) {
     if (!isOnTime(vote, config)) continue;
-    const current = latestByUser.get(vote.user);
+    const key = toUserKey(vote.user);
+    const current = latestByUser.get(key);
     if (!current || Date.parse(vote.at) >= Date.parse(current.at)) {
-      latestByUser.set(vote.user, vote);
+      latestByUser.set(key, vote);
     }
   }
 
-  return votes.filter((vote) => latestByUser.get(vote.user) === vote);
+  return votes.filter((vote) => latestByUser.get(toUserKey(vote.user)) === vote);
 };
 
 export const tallyVotes = (

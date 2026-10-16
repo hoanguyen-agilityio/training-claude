@@ -23,6 +23,10 @@ const COM_GA = 'Cơm gà';
 const BANH_MI = 'Bánh mì';
 const MI_QUANG = 'Mì Quảng';
 
+const AN = 'an';
+const AN_CAPITALISED = 'An';
+const AN_PADDED = ' an ';
+
 const vote = (user: string, meal: string, localTime: string): Vote => ({
   user,
   meal,
@@ -79,6 +83,18 @@ describe('tallyVotes', () => {
       vote('an', PHO, '09:31'),
       vote('binh', PHO, '10:10'),
       vote('an', COM_TAM, '10:40'),
+    ];
+
+    expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1, [COM_TAM]: 1 });
+  });
+
+  test('counts usernames that differ only in case or surrounding spaces as one user', () => {
+    // An, an and " an " are one voter whose latest on-time vote is cơm tấm
+    const votes = [
+      vote(AN_CAPITALISED, PHO, '09:30'),
+      vote(AN, PHO, '09:45'),
+      vote('binh', PHO, '10:10'),
+      vote(AN_PADDED, COM_TAM, '10:40'),
     ];
 
     expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1, [COM_TAM]: 1 });
