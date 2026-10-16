@@ -19,5 +19,10 @@
       "Bash(git push -f*)",
       "Bash(git commit -a*)"
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/statusline.cjs",
+    "padding": 0
   }
 }
