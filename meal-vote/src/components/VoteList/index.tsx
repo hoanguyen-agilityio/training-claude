@@ -27,16 +27,19 @@ const variantTheme = {
 interface VoteListProps {
   votes: Vote[];
   config: VotingConfig;
+  /** The selected day, "YYYY-MM-DD": votes cast on another date are listed but not counted */
+  date: string;
   variant?: BaseVariant;
 }
 
 export const VoteList = ({
   votes,
   config,
+  date,
   variant = BaseVariant.PRIMARY,
 }: VoteListProps) => {
   const theme = variantTheme[variant];
-  const countedVotes = new Set(selectCountedVotes(votes, config));
+  const countedVotes = new Set(selectCountedVotes(votes, config, date));
 
   return (
     <section aria-label="Votes" className={theme.root}>

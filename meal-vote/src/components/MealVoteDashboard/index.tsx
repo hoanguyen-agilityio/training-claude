@@ -28,9 +28,12 @@ const variantTheme = {
 };
 
 // Reads the export inside the error boundary, so an invalid export is shown as an error, not a blank page
-const DayExportResults = ({ day }: { day: VoteDay }) => (
-  <DayResults votes={getVoteExport(day)} config={votingConfig} />
-);
+const DayExportResults = ({ day }: { day: VoteDay }) => {
+  const option = VOTE_DAYS.find(({ id }) => id === day);
+  if (!option) throw new Error(`No date is configured for ${day}`);
+
+  return <DayResults votes={getVoteExport(day)} config={votingConfig} date={option.date} />;
+};
 
 interface MealVoteDashboardProps {
   variant?: BaseVariant;
