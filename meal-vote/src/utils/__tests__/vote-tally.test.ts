@@ -22,6 +22,8 @@ const BUN_RIEU = 'Bún riêu';
 const COM_GA = 'Cơm gà';
 const BANH_MI = 'Bánh mì';
 const MI_QUANG = 'Mì Quảng';
+const BLANK = '';
+const SPACES = '   ';
 
 const AN = 'an';
 const AN_CAPITALISED = 'An';
@@ -107,6 +109,24 @@ describe('tallyVotes', () => {
     expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
   });
 
+  test('skips votes whose meal name is empty or only spaces', () => {
+    // A blank meal is no meal, so only phở is counted
+    const votes = [
+      vote('an', PHO, '09:30'),
+      vote('binh', BLANK, '09:45'),
+      vote('chi', SPACES, '10:10'),
+    ];
+
+    expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
+  });
+
+  test('keeps the earlier vote when the same user later sends a blank meal', () => {
+    // An's blank vote at 10:40 does not replace their phở vote
+    const votes = [vote('an', PHO, '09:30'), vote('an', SPACES, '10:40')];
+
+    expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
+  });
+
   test('returns an empty tally when there are no votes', () => {
     // Nothing to count
     expect(tallyVotes([], OFFICE_CONFIG)).toEqual({});
@@ -140,6 +160,17 @@ describe('pickWinner', () => {
       meals: [BANH_MI, MI_QUANG],
       votes: 2,
     });
+  });
+
+  test('never names a blank meal as the winner', () => {
+    // Two blank votes outnumber the single phở vote but must not win
+    const votes = [
+      vote('an', PHO, '09:30'),
+      vote('binh', BLANK, '09:45'),
+      vote('chi', SPACES, '10:10'),
+    ];
+
+    expect(pickWinner(votes, OFFICE_CONFIG)).toEqual({ meals: [PHO], votes: 1 });
   });
 
   test('reports no winner when nobody voted on time', () => {
