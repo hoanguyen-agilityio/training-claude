@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { getVoteExport } from '@/services/vote-export';
 
 // Utils
-import { isOnTime, pickWinner, tallyVotes } from '@/utils/vote-tally';
+import { isOnDate, isOnTime, pickWinner, tallyVotes } from '@/utils/vote-tally';
 
 // Types
 import type { Vote, VotingConfig } from '@/types';
@@ -26,6 +26,10 @@ const MI_QUANG = 'Mì Quảng';
 const AN = 'an';
 const AN_CAPITALISED = 'An';
 const AN_PADDED = ' an ';
+
+const MONDAY = '2026-10-12';
+
+const voteAt = (at: string): Vote => ({ user: AN, meal: PHO, at });
 
 const vote = (user: string, meal: string, localTime: string): Vote => ({
   user,
@@ -50,7 +54,39 @@ describe('isOnTime', () => {
   });
 });
 
+describe('isOnDate', () => {
+  test('accepts a vote cast on the selected day', () => {
+    // 09:30 on Monday in office time
+    expect(isOnDate(voteAt('2026-10-12T09:30:00+07:00'), MONDAY, OFFICE_CONFIG)).toBe(true);
+  });
+
+  test('rejects votes cast on the day before or the day after', () => {
+    // Sunday and Tuesday votes do not belong in the Monday export
+    expect(isOnDate(voteAt('2026-10-11T10:00:00+07:00'), MONDAY, OFFICE_CONFIG)).toBe(false);
+    expect(isOnDate(voteAt('2026-10-13T10:00:00+07:00'), MONDAY, OFFICE_CONFIG)).toBe(false);
+  });
+
+  test('reads the date in office time, not UTC or the browser timezone', () => {
+    // 01:00Z and 23:30Z the night before are Monday morning at UTC+7; 18:00Z is Tuesday 01:00
+    expect(isOnDate(voteAt('2026-10-12T01:00:00Z'), MONDAY, OFFICE_CONFIG)).toBe(true);
+    expect(isOnDate(voteAt('2026-10-11T23:30:00Z'), MONDAY, OFFICE_CONFIG)).toBe(true);
+    expect(isOnDate(voteAt('2026-10-12T18:00:00Z'), MONDAY, OFFICE_CONFIG)).toBe(false);
+  });
+});
+
 describe('tallyVotes', () => {
+  test('skips votes stamped with another date than the selected day', () => {
+    // Only binh voted on Monday; the Sunday and Tuesday votes must not count
+    const votes: Vote[] = [
+      { user: AN, meal: COM_TAM, at: '2026-10-11T10:00:00+07:00' },
+      { user: 'binh', meal: PHO, at: '2026-10-12T01:00:00Z' },
+      { user: 'chi', meal: COM_TAM, at: '2026-10-13T09:00:00+07:00' },
+    ];
+
+    expect(tallyVotes(votes, OFFICE_CONFIG, MONDAY)).toEqual({ [PHO]: 1 });
+  });
+
+
   test('counts on-time votes per meal and skips late ones', () => {
     // Two on-time votes for phở, one on-time and one late for cơm tấm
     const votes = [

@@ -16,6 +16,7 @@ const BUN_CHA = 'Bún chả';
 const COM_TAM = 'Cơm tấm';
 const COUNTED = 'Yes';
 const NOT_COUNTED = 'No';
+const WEDNESDAY = '2026-10-14';
 
 const VOTES: Vote[] = [
   { user: AN, meal: BUN_CHA, at: '2026-10-14T10:10:00+07:00' },
@@ -30,7 +31,7 @@ describe('VoteList', () => {
 
   test('shows each vote with its office time and whether it counted', () => {
     // An on-time vote and a late one
-    render(<VoteList votes={VOTES} config={OFFICE_CONFIG} />);
+    render(<VoteList votes={VOTES} config={OFFICE_CONFIG} date={WEDNESDAY} />);
 
     const [, onTimeRow, lateRow] = screen.getAllByRole('row');
     expect(within(onTimeRow).getByText(AN)).toBeInTheDocument();
@@ -48,7 +49,7 @@ describe('VoteList', () => {
       { user: AN, meal: COM_TAM, at: '2026-10-14T10:30:00+07:00' },
     ];
 
-    render(<VoteList votes={votes} config={OFFICE_CONFIG} />);
+    render(<VoteList votes={votes} config={OFFICE_CONFIG} date={WEDNESDAY} />);
 
     const [, replacedRow, latestRow] = screen.getAllByRole('row');
     expect(within(replacedRow).getByText(NOT_COUNTED)).toBeInTheDocument();
@@ -64,16 +65,31 @@ describe('VoteList', () => {
       { user: AN, meal: COM_TAM, at: '2026-10-14T10:30:00+07:00' },
     ];
 
-    render(<VoteList votes={votes} config={OFFICE_CONFIG} />);
+    render(<VoteList votes={votes} config={OFFICE_CONFIG} date={WEDNESDAY} />);
 
     const [, replacedRow, latestRow] = screen.getAllByRole('row');
     expect(within(replacedRow).getByText(NOT_COUNTED)).toBeInTheDocument();
     expect(within(latestRow).getByText(COUNTED)).toBeInTheDocument();
   });
 
+  test('keeps a vote from another date visible but marks it as not counted', () => {
+    // The Tuesday vote stays in the list so the export can be checked, but does not count
+    const votes: Vote[] = [
+      { user: AN, meal: BUN_CHA, at: '2026-10-14T10:10:00+07:00' },
+      { user: 'binh', meal: COM_TAM, at: '2026-10-13T10:10:00+07:00' },
+    ];
+
+    render(<VoteList votes={votes} config={OFFICE_CONFIG} date={WEDNESDAY} />);
+
+    const [, sameDayRow, otherDateRow] = screen.getAllByRole('row');
+    expect(within(sameDayRow).getByText(COUNTED)).toBeInTheDocument();
+    expect(within(otherDateRow).getByText('binh')).toBeInTheDocument();
+    expect(within(otherDateRow).getByText(NOT_COUNTED)).toBeInTheDocument();
+  });
+
   test('shows the number of votes in the heading', () => {
     // Two votes in the export
-    render(<VoteList votes={VOTES} config={OFFICE_CONFIG} />);
+    render(<VoteList votes={VOTES} config={OFFICE_CONFIG} date={WEDNESDAY} />);
 
     expect(screen.getByRole('heading', { name: `Votes (${VOTES.length})` })).toBeInTheDocument();
   });

@@ -22,24 +22,27 @@ const variantTheme = {
 interface DayResultsProps {
   votes: Vote[];
   config: VotingConfig;
+  /** The selected day, "YYYY-MM-DD" */
+  date: string;
   variant?: BaseVariant;
 }
 
 export const DayResults = ({
   votes,
   config,
+  date,
   variant = BaseVariant.PRIMARY,
 }: DayResultsProps) => {
   const theme = variantTheme[variant];
-  const tally = tallyVotes(votes, config);
-  const winner = pickWinner(votes, config);
+  const tally = tallyVotes(votes, config, date);
+  const winner = pickWinner(votes, config, date);
 
   return (
     <div className={theme.root}>
       <WinnerCard winner={winner} closesAt={config.closesAt} />
       <div className={theme.grid}>
         <VoteTally tally={tally} />
-        <VoteList votes={votes} config={config} />
+        <VoteList votes={votes} config={config} date={date} />
       </div>
     </div>
   );
