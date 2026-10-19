@@ -72,6 +72,21 @@ describe('VoteList', () => {
     expect(within(latestRow).getByText(COUNTED)).toBeInTheDocument();
   });
 
+  test('keeps a vote with a blank meal in the list, marked as not counted', () => {
+    // The blank row is shown so the kitchen can see it, but it does not count
+    const votes: Vote[] = [
+      { user: AN, meal: BUN_CHA, at: '2026-10-14T09:30:00+07:00' },
+      { user: 'binh', meal: '   ', at: '2026-10-14T10:30:00+07:00' },
+    ];
+
+    render(<VoteList votes={votes} config={OFFICE_CONFIG} date={WEDNESDAY} />);
+
+    const [, realRow, blankRow] = screen.getAllByRole('row');
+    expect(within(realRow).getByText(COUNTED)).toBeInTheDocument();
+    expect(within(blankRow).getByText('binh')).toBeInTheDocument();
+    expect(within(blankRow).getByText(NOT_COUNTED)).toBeInTheDocument();
+  });
+
   test('keeps a vote from another date visible but marks it as not counted', () => {
     // The Tuesday vote stays in the list so the export can be checked, but does not count
     const votes: Vote[] = [
