@@ -5,6 +5,7 @@ import votingConfig from '@/config/voting.json';
 import type { Vote, VoteTally, VotingConfig, Winner } from '@/types';
 
 const MINUTES_IN_DAY = 24 * 60;
+const MS_IN_HOUR = 60 * 60 * 1000;
 
 /** Collapses runs of whitespace and trims, so "Phở  bò " reads as "Phở bò". */
 const tidyMealName = (meal: string): string =>
@@ -30,20 +31,34 @@ export const isOnTime = (
   return (local + MINUTES_IN_DAY) % MINUTES_IN_DAY <= hours * 60 + minutes;
 };
 
+/** A vote belongs to a day only if it was cast on that date ("YYYY-MM-DD") in office local time. */
+export const isOnDate = (
+  vote: Vote,
+  date: string,
+  { utcOffsetHours }: VotingConfig = votingConfig,
+): boolean => {
+  const officeTime = new Date(Date.parse(vote.at) + utcOffsetHours * MS_IN_HOUR);
+
+  return officeTime.toISOString().slice(0, 10) === date;
+};
+
 /**
  * Each user has one vote per day: their latest on-time one. Usernames that differ only in
  * case or surrounding spaces are the same user. Earlier votes and votes after
- * the cut-off do not count, and neither do votes with a blank meal name, so a blank vote never
- * replaces a real one. Returns the counted votes in export order.
+ * the cut-off do not count, nor, when a date is given, votes cast on another date. Votes with
+ * a blank meal name do not count either, so a blank vote never replaces a real one.
+ * Returns the counted votes in export order.
  */
 export const selectCountedVotes = (
   votes: Vote[],
   config: VotingConfig = votingConfig,
+  date?: string,
 ): Vote[] => {
   const latestByUser = new Map<string, Vote>();
 
   for (const vote of votes) {
     if (!isOnTime(vote, config)) continue;
+    if (date !== undefined && !isOnDate(vote, date, config)) continue;
     if (!tidyMealName(vote.meal)) continue;
     const key = toUserKey(vote.user);
     const current = latestByUser.get(key);
@@ -58,12 +73,13 @@ export const selectCountedVotes = (
 export const tallyVotes = (
   votes: Vote[],
   config: VotingConfig = votingConfig,
+  date?: string,
 ): VoteTally => {
   const counts: VoteTally = {};
   // The first spelling seen for a meal is the one shown in the results
   const labels = new Map<string, string>();
 
-  for (const vote of selectCountedVotes(votes, config)) {
+  for (const vote of selectCountedVotes(votes, config, date)) {
     const key = toMealKey(vote.meal);
     const label = labels.get(key) ?? tidyMealName(vote.meal);
     labels.set(key, label);
@@ -77,8 +93,9 @@ export const tallyVotes = (
 export const pickWinner = (
   votes: Vote[],
   config: VotingConfig = votingConfig,
+  date?: string,
 ): Winner => {
-  const counts = Object.entries(tallyVotes(votes, config));
+  const counts = Object.entries(tallyVotes(votes, config, date));
   const best = Math.max(0, ...counts.map(([, count]) => count));
   const meals = counts
     .filter(([, count]) => count === best)
