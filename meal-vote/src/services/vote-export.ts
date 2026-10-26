@@ -22,7 +22,8 @@ const EXPORTS: Record<VoteDay, unknown> = {
 const VOTE_FIELDS = ['user', 'meal', 'at'] as const;
 
 // ISO 8601 date and time, with or without a UTC offset ("Z" or "±HH:mm")
-const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(?<offset>Z|[+-]\d{2}:\d{2})?$/;
+const ISO_TIMESTAMP =
+  /^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})T(?<hour>\d{2}):(?<minute>\d{2})(:(?<second>\d{2})(\.\d+)?)?(?<offset>Z|[+-]\d{2}:\d{2})?$/;
 
 const pad = (value: number): string => String(value).padStart(2, '0');
 
@@ -38,11 +39,28 @@ const formatUtcOffset = (hours: number): string => {
  * never the viewer's timezone. Returns null when it is not a real ISO 8601 date and time.
  */
 const toOfficeTimestamp = (at: string, { utcOffsetHours }: VotingConfig): string | null => {
-  const match = ISO_TIMESTAMP.exec(at);
-  if (!match) return null;
-  const timestamp = match.groups?.offset ? at : `${at}${formatUtcOffset(utcOffsetHours)}`;
+  const groups = ISO_TIMESTAMP.exec(at)?.groups;
+  if (!groups) return null;
+  const [year, month, day, hour, minute, second] = [
+    groups.year,
+    groups.month,
+    groups.day,
+    groups.hour,
+    groups.minute,
+    groups.second ?? '0',
+  ].map(Number);
+  // Date.parse rolls impossible dates over (Feb 30 becomes Mar 2), so rebuild and compare
+  const rebuilt = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  const isRealTime =
+    rebuilt.getUTCFullYear() === year &&
+    rebuilt.getUTCMonth() === month - 1 &&
+    rebuilt.getUTCDate() === day &&
+    rebuilt.getUTCHours() === hour &&
+    rebuilt.getUTCMinutes() === minute &&
+    rebuilt.getUTCSeconds() === second;
+  if (!isRealTime) return null;
 
-  return Number.isNaN(Date.parse(timestamp)) ? null : timestamp;
+  return groups.offset ? at : `${at}${formatUtcOffset(utcOffsetHours)}`;
 };
 
 const isVote = (record: unknown): record is Vote =>

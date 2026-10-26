@@ -20,6 +20,14 @@ const MONDAY_DATE = '2026-10-12';
 const OFFSETLESS_AT = '2026-10-12T10:30:00';
 const OFFSETLESS_VOTE = { user: 'an', meal: 'Phở bò', at: OFFSETLESS_AT };
 const OFFSET_VOTE = { user: 'binh', meal: 'Cơm tấm', at: '2026-10-12T09:00:00+07:00' };
+// Malformed, date-only, out-of-range, and calendar dates that do not exist (Feb 30, Apr 31)
+const UNPARSEABLE_TIMES = [
+  'not a time',
+  '2026-10-12',
+  '2026-13-45T25:00:00',
+  '2026-02-30T10:00:00',
+  '2026-04-31T10:00:00',
+];
 
 beforeAll(() => {
   vi.stubEnv('TZ', VIEWER_TIME_ZONE);
@@ -84,7 +92,7 @@ describe('parseVoteExport', () => {
     );
   });
 
-  test.each(['not a time', '2026-10-12', '2026-13-45T25:00:00'])(
+  test.each(UNPARSEABLE_TIMES)(
     'names the index of an unparseable time: %s',
     (at) => {
       // A time the cut-off can't be checked against fails here, not in the Votes list
