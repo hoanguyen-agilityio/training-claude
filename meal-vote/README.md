@@ -26,6 +26,7 @@ pnpm dev          # http://localhost:4321
 | `pnpm build` / `pnpm preview` | Production build and local preview |
 | `pnpm typecheck` | `astro sync` + `tsc --noEmit` |
 | `pnpm test` | Unit and component tests (Vitest) |
+| `pnpm test:watch` | Vitest in watch mode, re-running tests on save |
 
 ## How it works
 
