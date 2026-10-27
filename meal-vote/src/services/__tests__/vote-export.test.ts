@@ -28,9 +28,11 @@ const UNPARSEABLE_TIMES = [
   '2026-02-30T10:00:00',
   '2026-04-31T10:00:00',
 ];
-// UTC offsets no timezone has: more than 14 hours, or 60 minutes or more
+// UTC offsets no timezone has: past +14:00 or -12:00, or 60 minutes or more
 const IMPOSSIBLE_OFFSET_TIMES = [
   '2026-10-12T10:30:00+25:00',
+  '2026-10-12T10:30:00+14:30',
+  '2026-10-12T10:30:00-13:00',
   '2026-10-12T10:30:00-15:00',
   '2026-10-12T10:30:00+07:60',
 ];
@@ -117,7 +119,7 @@ describe('parseVoteExport', () => {
   test.each(IMPOSSIBLE_OFFSET_TIMES)(
     'names the index of a time with an impossible offset: %s',
     (at) => {
-      // Date.parse can't read these, so the cut-off check would drop the vote silently
+      // No timezone uses these, so the tally would count the vote at a wrong time or drop it
       expect(() => parseVoteExport([VALID_VOTE, { ...VALID_VOTE, at }], DAY)).toThrow(
         `Invalid vote time at index 1 in the tuesday export: "${at}"`,
       );
