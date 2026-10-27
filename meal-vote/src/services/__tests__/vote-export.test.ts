@@ -31,15 +31,19 @@ const UNPARSEABLE_TIMES = [
 // UTC offsets no timezone has: past +14:00 or -12:00, or 60 minutes or more
 const IMPOSSIBLE_OFFSET_TIMES = [
   '2026-10-12T10:30:00+25:00',
+  '2026-10-12T10:30:00+14:01',
   '2026-10-12T10:30:00+14:30',
+  '2026-10-12T10:30:00-12:01',
+  '2026-10-12T10:30:00-12:30',
   '2026-10-12T10:30:00-13:00',
   '2026-10-12T10:30:00-15:00',
   '2026-10-12T10:30:00+07:60',
 ];
-// The widest real offsets (Kiribati, Baker Island) and a half-hour one (India)
+// The widest real offsets (Kiribati, Baker Island), one minute inside, and a half-hour one (India)
 const EDGE_OFFSET_TIMES = [
   '2026-10-12T10:30:00+14:00',
   '2026-10-12T10:30:00-12:00',
+  '2026-10-12T10:30:00-11:59',
   '2026-10-12T10:30:00+05:30',
 ];
 
