@@ -14,8 +14,12 @@ const tidyMealName = (meal: string): string =>
 /** Voters type meal names freely; case and spacing must not split one meal into several. */
 const toMealKey = (meal: string): string => tidyMealName(meal).toLocaleLowerCase('vi');
 
-/** "An", "an" and " an " are one voter: usernames ignore case and surrounding spaces. */
-const toUserKey = (user: string): string => user.normalize('NFC').trim().toLocaleLowerCase('vi');
+// Zero-width space, non-joiner and joiner, word joiner: invisible, and not removed by trim()
+const INVISIBLE_CHARACTERS = /[\u200b-\u200d\u2060]/g;
+
+/** "An", "an" and " an " are one voter: usernames ignore case, outer spaces and invisible marks. */
+const toUserKey = (user: string): string =>
+  user.normalize('NFC').replace(INVISIBLE_CHARACTERS, '').trim().toLocaleLowerCase('vi');
 
 /** A vote counts only if it was cast before the daily cut-off, in office local time. */
 export const isOnTime = (

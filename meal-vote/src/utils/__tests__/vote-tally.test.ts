@@ -24,6 +24,9 @@ const BANH_MI = 'Bánh mì';
 const MI_QUANG = 'Mì Quảng';
 const BLANK = '';
 const SPACES = '   ';
+const TAB = '\t';
+const NO_BREAK_SPACE = '\u00a0';
+const ZERO_WIDTH_SPACE = '\u200b';
 
 const AN = 'an';
 const AN_CAPITALISED = 'An';
@@ -163,12 +166,15 @@ describe('tallyVotes', () => {
     expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
   });
 
-  test('skips votes whose username is empty or only spaces', () => {
-    // Nobody can be held to one vote without a name, so only An's phở is counted
+  test('skips votes whose username is empty, whitespace or invisible', () => {
+    // Nobody can be held to one vote without a visible name, so only An's phở is counted
     const votes = [
       vote(AN, PHO, '09:30'),
       vote(BLANK, COM_TAM, '09:45'),
       vote(SPACES, COM_TAM, '10:10'),
+      vote(TAB, COM_TAM, '10:15'),
+      vote(NO_BREAK_SPACE, COM_TAM, '10:20'),
+      vote(ZERO_WIDTH_SPACE, COM_TAM, '10:25'),
     ];
 
     expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
