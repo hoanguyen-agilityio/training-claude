@@ -23,11 +23,11 @@ const VOTE_FIELDS = ['user', 'meal', 'at'] as const;
 
 // ISO 8601 date and time, with or without a UTC offset ("Z" or "±HH:mm")
 const ISO_TIMESTAMP =
-  /^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})T(?<hour>\d{2}):(?<minute>\d{2})(:(?<second>\d{2})(\.\d+)?)?(?<offset>Z|[+-](?<offsetHours>\d{2}):(?<offsetMinutes>\d{2}))?$/;
+  /^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})T(?<hour>\d{2}):(?<minute>\d{2})(:(?<second>\d{2})(\.\d+)?)?(?<offset>Z|(?<offsetSign>[+-])(?<offsetHours>\d{2}):(?<offsetMinutes>\d{2}))?$/;
 
-// No timezone is more than 14 hours from UTC (Kiribati is +14:00)
-const MAX_OFFSET_HOURS = 14;
-const MAX_OFFSET_MINUTES = 59;
+// Real UTC offsets run from -12:00 (Baker Island) to +14:00 (Kiribati), in minutes
+const MIN_OFFSET_MINUTES = -12 * 60;
+const MAX_OFFSET_MINUTES = 14 * 60;
 
 const pad = (value: number): string => String(value).padStart(2, '0');
 
@@ -63,10 +63,13 @@ const toOfficeTimestamp = (at: string, { utcOffsetHours }: VotingConfig): string
     rebuilt.getUTCMinutes() === minute &&
     rebuilt.getUTCSeconds() === second;
   if (!isRealTime) return null;
-  // Date.parse can't read an offset like +25:00 or +07:60, and the cut-off check would drop the vote
+  // An offset no timezone uses (+25:00, -13:00, +07:60) would put the vote at a wrong time
+  const [offsetHours, offsetMinutes] = [groups.offsetHours ?? '0', groups.offsetMinutes ?? '0'].map(
+    Number,
+  );
+  const offset = (groups.offsetSign === '-' ? -1 : 1) * (offsetHours * 60 + offsetMinutes);
   const isRealOffset =
-    Number(groups.offsetHours ?? 0) <= MAX_OFFSET_HOURS &&
-    Number(groups.offsetMinutes ?? 0) <= MAX_OFFSET_MINUTES;
+    offsetMinutes < 60 && offset >= MIN_OFFSET_MINUTES && offset <= MAX_OFFSET_MINUTES;
   if (!isRealOffset) return null;
 
   return groups.offset ? at : `${at}${formatUtcOffset(utcOffsetHours)}`;
