@@ -4,31 +4,33 @@ import votingConfig from '@/config/voting.json';
 // Types
 import type { Vote, VoteTally, VotingConfig, Winner } from '@/types';
 
-const MINUTES_IN_DAY = 24 * 60;
 const MS_IN_HOUR = 60 * 60 * 1000;
 
 /** Collapses runs of whitespace and trims, so "Phở  bò " reads as "Phở bò". */
 const tidyMealName = (meal: string): string =>
-  meal.normalize('NFC').replace(/\s+/g, ' ').trim();
+  meal.normalize('NFC').replace(/ +/g, ' ').trim();
 
 /** Voters type meal names freely; case and spacing must not split one meal into several. */
 const toMealKey = (meal: string): string => tidyMealName(meal).toLocaleLowerCase('vi');
 
 /** "An", "an" and " an " are one voter: usernames ignore case and surrounding spaces. */
-const toUserKey = (user: string): string => user.normalize('NFC').trim().toLocaleLowerCase('vi');
+const toUserKey = (user: string): string => user.trim().toLocaleLowerCase('vi');
+
+/** Minutes since midnight in office local time, 0–1439. */
+const toOfficeMinutes = (at: Date, utcOffsetHours: number): number => {
+  const hours = (at.getUTCHours() + Math.floor(utcOffsetHours) + 24) % 24;
+
+  return hours * 60 + at.getUTCMinutes();
+};
 
 /** A vote counts only if it was cast before the daily cut-off, in office local time. */
 export const isOnTime = (
   vote: Vote,
   { closesAt, utcOffsetHours }: VotingConfig = votingConfig,
 ): boolean => {
-  const at = new Date(vote.at);
-  const local =
-    ((at.getUTCHours() + utcOffsetHours) * 60 + at.getUTCMinutes()) %
-    MINUTES_IN_DAY;
   const [hours, minutes] = closesAt.split(':').map(Number);
 
-  return (local + MINUTES_IN_DAY) % MINUTES_IN_DAY <= hours * 60 + minutes;
+  return toOfficeMinutes(new Date(vote.at), utcOffsetHours) <= hours * 60 + minutes;
 };
 
 /** A vote belongs to a day only if it was cast on that date ("YYYY-MM-DD") in office local time. */
@@ -39,7 +41,8 @@ export const isOnDate = (
 ): boolean => {
   const officeTime = new Date(Date.parse(vote.at) + utcOffsetHours * MS_IN_HOUR);
 
-  return officeTime.toISOString().slice(0, 10) === date;
+  // The "sv" locale formats dates as YYYY-MM-DD
+  return officeTime.toLocaleDateString('sv') === date;
 };
 
 /**
@@ -100,7 +103,7 @@ export const pickWinner = (
   const meals = counts
     .filter(([, count]) => count === best)
     .map(([meal]) => meal)
-    .sort((a, b) => a.localeCompare(b, 'vi'));
+    .sort();
 
   return { meals, votes: best };
 };
