@@ -46,7 +46,8 @@ export const isOnDate = (
  * Each user has one vote per day: their latest on-time one. Usernames that differ only in
  * case or surrounding spaces are the same user. Earlier votes and votes after
  * the cut-off do not count, nor, when a date is given, votes cast on another date. Votes with
- * a blank meal name do not count either, so a blank vote never replaces a real one.
+ * a blank meal name or a blank username do not count either, so a blank vote never replaces a real
+ * one and nameless votes are not merged into one voter.
  * Returns the counted votes in export order.
  */
 export const selectCountedVotes = (
@@ -61,6 +62,7 @@ export const selectCountedVotes = (
     if (date !== undefined && !isOnDate(vote, date, config)) continue;
     if (!tidyMealName(vote.meal)) continue;
     const key = toUserKey(vote.user);
+    if (!key) continue;
     const current = latestByUser.get(key);
     if (!current || Date.parse(vote.at) >= Date.parse(current.at)) {
       latestByUser.set(key, vote);

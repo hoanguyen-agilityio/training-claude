@@ -163,6 +163,17 @@ describe('tallyVotes', () => {
     expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
   });
 
+  test('skips votes whose username is empty or only spaces', () => {
+    // Nobody can be held to one vote without a name, so only An's phở is counted
+    const votes = [
+      vote(AN, PHO, '09:30'),
+      vote(BLANK, COM_TAM, '09:45'),
+      vote(SPACES, COM_TAM, '10:10'),
+    ];
+
+    expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
+  });
+
   test('returns an empty tally when there are no votes', () => {
     // Nothing to count
     expect(tallyVotes([], OFFICE_CONFIG)).toEqual({});
