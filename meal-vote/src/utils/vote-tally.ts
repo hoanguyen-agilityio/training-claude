@@ -14,12 +14,14 @@ const tidyMealName = (meal: string): string =>
 /** Voters type meal names freely; case and spacing must not split one meal into several. */
 const toMealKey = (meal: string): string => tidyMealName(meal).toLocaleLowerCase('vi');
 
-// Zero-width space, non-joiner and joiner, word joiner: invisible, and not removed by trim()
-const INVISIBLE_CHARACTERS = /[\u200b-\u200d\u2060]/g;
+/** "An", "an" and " an " are one voter: usernames ignore case and surrounding spaces. */
+const toUserKey = (user: string): string => user.normalize('NFC').trim().toLocaleLowerCase('vi');
 
-/** "An", "an" and " an " are one voter: usernames ignore case, outer spaces and invisible marks. */
-const toUserKey = (user: string): string =>
-  user.normalize('NFC').replace(INVISIBLE_CHARACTERS, '').trim().toLocaleLowerCase('vi');
+// Whitespace plus characters fonts draw as nothing (zero-width space, soft hyphen, BOM, ...)
+const INVISIBLE = /[\p{White_Space}\p{Default_Ignorable_Code_Point}]/gu;
+
+/** True when a name has at least one visible character; joiners inside a name are kept. */
+const hasVisibleText = (text: string): boolean => text.replace(INVISIBLE, '') !== '';
 
 /** A vote counts only if it was cast before the daily cut-off, in office local time. */
 export const isOnTime = (
@@ -50,8 +52,8 @@ export const isOnDate = (
  * Each user has one vote per day: their latest on-time one. Usernames that differ only in
  * case or surrounding spaces are the same user. Earlier votes and votes after
  * the cut-off do not count, nor, when a date is given, votes cast on another date. Votes with
- * a blank meal name or a blank username do not count either, so a blank vote never replaces a real
- * one and nameless votes are not merged into one voter.
+ * a meal name or username with nothing visible do not count either, so a blank vote never
+ * replaces a real one and nameless votes are not merged into one voter.
  * Returns the counted votes in export order.
  */
 export const selectCountedVotes = (
@@ -64,9 +66,8 @@ export const selectCountedVotes = (
   for (const vote of votes) {
     if (!isOnTime(vote, config)) continue;
     if (date !== undefined && !isOnDate(vote, date, config)) continue;
-    if (!tidyMealName(vote.meal)) continue;
+    if (!hasVisibleText(vote.meal) || !hasVisibleText(vote.user)) continue;
     const key = toUserKey(vote.user);
-    if (!key) continue;
     const current = latestByUser.get(key);
     if (!current || Date.parse(vote.at) >= Date.parse(current.at)) {
       latestByUser.set(key, vote);

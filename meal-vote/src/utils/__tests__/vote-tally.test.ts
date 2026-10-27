@@ -24,9 +24,21 @@ const BANH_MI = 'Bánh mì';
 const MI_QUANG = 'Mì Quảng';
 const BLANK = '';
 const SPACES = '   ';
-const TAB = '\t';
-const NO_BREAK_SPACE = '\u00a0';
-const ZERO_WIDTH_SPACE = '\u200b';
+// Names with nothing visible: whitespace, or characters fonts draw as nothing
+const BLANK_NAMES = [
+  ['empty', BLANK],
+  ['spaces', SPACES],
+  ['tab', '\t'],
+  ['no-break space', '\u00a0'],
+  ['zero-width space', '\u200b'],
+  ['byte order mark', '\ufeff'],
+  ['left-to-right mark', '\u200e'],
+  ['soft hyphen', '\u00ad'],
+  ['Hangul filler', '\u3164'],
+];
+// Persian "I want", spelled with and without the zero-width non-joiner it needs
+const PERSIAN_NAME = 'می\u200cخواهم';
+const PERSIAN_NAME_WITHOUT_JOINER = 'میخواهم';
 
 const AN = 'an';
 const AN_CAPITALISED = 'An';
@@ -166,18 +178,28 @@ describe('tallyVotes', () => {
     expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
   });
 
-  test('skips votes whose username is empty, whitespace or invisible', () => {
+  test.each(BLANK_NAMES)('skips votes whose username is blank: %s', (_, user) => {
     // Nobody can be held to one vote without a visible name, so only An's phở is counted
-    const votes = [
-      vote(AN, PHO, '09:30'),
-      vote(BLANK, COM_TAM, '09:45'),
-      vote(SPACES, COM_TAM, '10:10'),
-      vote(TAB, COM_TAM, '10:15'),
-      vote(NO_BREAK_SPACE, COM_TAM, '10:20'),
-      vote(ZERO_WIDTH_SPACE, COM_TAM, '10:25'),
-    ];
+    const votes = [vote(AN, PHO, '09:30'), vote(user, COM_TAM, '09:45')];
 
     expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
+  });
+
+  test.each(BLANK_NAMES)('skips votes whose meal name is blank: %s', (_, meal) => {
+    // A meal with nothing visible is no meal, so only phở is counted
+    const votes = [vote(AN, PHO, '09:30'), vote('binh', meal, '09:45')];
+
+    expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1 });
+  });
+
+  test('keeps a joiner inside a name, so different names stay different voters', () => {
+    // The zero-width non-joiner is part of the Persian spelling; both votes count
+    const votes = [
+      vote(PERSIAN_NAME, PHO, '09:30'),
+      vote(PERSIAN_NAME_WITHOUT_JOINER, COM_TAM, '09:45'),
+    ];
+
+    expect(tallyVotes(votes, OFFICE_CONFIG)).toEqual({ [PHO]: 1, [COM_TAM]: 1 });
   });
 
   test('returns an empty tally when there are no votes', () => {
