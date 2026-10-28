@@ -49,6 +49,23 @@ export const isOnDate = (
 };
 
 /**
+ * Why a vote can never count, whatever else the user sent: blank, then other day (only when a
+ * date is given), then late. Undefined when the vote is eligible. selectCountedVotes and
+ * getVoteStatuses both use it, so the list can never give a reason the tally does not apply.
+ */
+const getSkipReason = (
+  vote: Vote,
+  config: VotingConfig,
+  date?: string,
+): VoteStatus | undefined => {
+  if (!hasVisibleText(vote.meal) || !hasVisibleText(vote.user)) return VoteStatus.BLANK;
+  if (date !== undefined && !isOnDate(vote, date, config)) return VoteStatus.OTHER_DAY;
+  if (!isOnTime(vote, config)) return VoteStatus.LATE;
+
+  return undefined;
+};
+
+/**
  * Each user has one vote per day: their latest on-time one. Usernames that differ only in
  * case or surrounding spaces are the same user. Earlier votes and votes after
  * the cut-off do not count, nor, when a date is given, votes cast on another date. Votes with
@@ -64,9 +81,7 @@ export const selectCountedVotes = (
   const latestByUser = new Map<string, Vote>();
 
   for (const vote of votes) {
-    if (!isOnTime(vote, config)) continue;
-    if (date !== undefined && !isOnDate(vote, date, config)) continue;
-    if (!hasVisibleText(vote.meal) || !hasVisibleText(vote.user)) continue;
+    if (getSkipReason(vote, config, date) !== undefined) continue;
     const key = toUserKey(vote.user);
     const current = latestByUser.get(key);
     if (!current || Date.parse(vote.at) >= Date.parse(current.at)) {
@@ -78,9 +93,9 @@ export const selectCountedVotes = (
 };
 
 /**
- * Each vote's status, in export order: counted, or the one reason it was not, checked as
- * blank, then other day (only when a date is given), then late, then replaced. "Counted" comes
- * from selectCountedVotes, so the list can never disagree with the tally.
+ * Each vote's status, in export order: counted, or the one reason it was not. An eligible
+ * vote that does not count was replaced by a later one. "Counted" comes from
+ * selectCountedVotes, so the list can never disagree with the tally.
  */
 export const getVoteStatuses = (
   votes: Vote[],
@@ -89,13 +104,11 @@ export const getVoteStatuses = (
 ): VoteStatus[] => {
   const countedVotes = new Set(selectCountedVotes(votes, config, date));
 
-  return votes.map((vote) => {
-    if (!hasVisibleText(vote.meal) || !hasVisibleText(vote.user)) return VoteStatus.BLANK;
-    if (date !== undefined && !isOnDate(vote, date, config)) return VoteStatus.OTHER_DAY;
-    if (!isOnTime(vote, config)) return VoteStatus.LATE;
-
-    return countedVotes.has(vote) ? VoteStatus.COUNTED : VoteStatus.REPLACED;
-  });
+  return votes.map(
+    (vote) =>
+      getSkipReason(vote, config, date) ??
+      (countedVotes.has(vote) ? VoteStatus.COUNTED : VoteStatus.REPLACED),
+  );
 };
 
 export const tallyVotes = (
