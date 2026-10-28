@@ -21,3 +21,11 @@
 .vote-tally-count {
   @apply border-b border-kitchen-line py-2 font-semibold;
 }
+
+.vote-tally-share {
+  @apply border-b border-kitchen-line py-2 text-kitchen-muted;
+}
+
+.vote-tally-total {
+  @apply pt-2 font-semibold text-kitchen-ink;
+}
