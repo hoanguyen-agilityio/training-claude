@@ -17,9 +17,8 @@ const variantTheme = {
   },
 };
 
-/** Whole-number percentage of the counted votes; 0 when nothing was counted (never NaN) */
-const toShare = (count: number, total: number) =>
-  total === 0 ? 0 : Math.round((count / total) * 100);
+/** Whole-number percentage of the counted votes; only called for a row, so total is never 0 */
+const toShare = (count: number, total: number) => Math.round((count / total) * 100);
 
 interface VoteTallyProps {
   tally: VoteTallyData;

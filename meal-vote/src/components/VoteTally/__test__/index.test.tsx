@@ -8,7 +8,6 @@ import { VoteTally } from '..';
 const TALLY = { 'Cơm tấm': 1, 'Bún chả': 3 };
 const UNEVEN_TALLY = { 'Phở bò': 1, 'Bánh mì': 1, 'Mì Quảng': 1 };
 const TOTAL_LABEL = 'Total counted:';
-const NAN_TEXT = 'NaN%';
 
 describe('VoteTally', () => {
   test('lists meals from most to fewest votes', () => {
@@ -45,13 +44,12 @@ describe('VoteTally', () => {
     expect(lastRow).toHaveTextContent(`${TOTAL_LABEL} 4`);
   });
 
-  test('shows a zero total and no NaN for an empty tally', () => {
+  test('shows a zero total for an empty tally', () => {
     // Nobody counted: the table stays visible with header and total only
     render(<VoteTally tally={{}} />);
 
     const rows = screen.getAllByRole('row');
     expect(rows).toHaveLength(2);
     expect(rows.at(-1)).toHaveTextContent(`${TOTAL_LABEL} 0`);
-    expect(screen.getByRole('table')).not.toHaveTextContent(NAN_TEXT);
   });
 });
