@@ -5,10 +5,17 @@ import { describe, expect, test } from 'vitest';
 import { getVoteExport } from '@/services/vote-export';
 
 // Utils
-import { isOnDate, isOnTime, pickWinner, tallyVotes } from '@/utils/vote-tally';
+import {
+  getVoteStatuses,
+  isOnDate,
+  isOnTime,
+  pickWinner,
+  selectCountedVotes,
+  tallyVotes,
+} from '@/utils/vote-tally';
 
 // Types
-import type { Vote, VotingConfig } from '@/types';
+import { VoteStatus, type Vote, type VoteDay, type VotingConfig } from '@/types';
 
 // The office's real settings, passed explicitly so these tests don't depend on the shipped config
 const OFFICE_CONFIG: VotingConfig = { closesAt: '11:00', utcOffsetHours: 7 };
@@ -43,8 +50,14 @@ const PERSIAN_NAME_WITHOUT_JOINER = 'میخواهم';
 const AN = 'an';
 const AN_CAPITALISED = 'An';
 const AN_PADDED = ' an ';
+const BINH = 'binh';
 
 const MONDAY = '2026-10-12';
+const WEDNESDAY = '2026-10-14';
+const TUESDAY_ON_TIME = '2026-10-13T10:00:00+07:00';
+const TUESDAY_LATE = '2026-10-13T11:30:00+07:00';
+const MALFORMED_TIMES = ['', 'garbage'];
+const SHIPPED_DAYS: VoteDay[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
 const voteAt = (at: string): Vote => ({ user: AN, meal: PHO, at });
 
@@ -285,5 +298,128 @@ describe('shipped vote exports', () => {
     // An voted cơm gà three times and giang switched to bún riêu; dung's late switch is ignored
     expect(tallyVotes(getVoteExport('thursday'))).toEqual({ [BUN_RIEU]: 3, [COM_GA]: 2 });
     expect(pickWinner(getVoteExport('thursday'))).toEqual({ meals: [BUN_RIEU], votes: 3 });
+  });
+});
+
+describe('getVoteStatuses', () => {
+  test('marks an on-time vote on the selected day as counted', () => {
+    // A single valid vote
+    expect(getVoteStatuses([vote(AN, PHO, '10:00')], OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.COUNTED,
+    ]);
+  });
+
+  test('marks a vote after the cut-off as late', () => {
+    // 11:01 is one minute past the 11:00 cut-off
+    expect(getVoteStatuses([vote(AN, PHO, '11:01')], OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.LATE,
+    ]);
+  });
+
+  test('marks a vote cast on another office-local date as other day', () => {
+    // Tuesday's vote in Wednesday's list
+    expect(getVoteStatuses([voteAt(TUESDAY_ON_TIME)], OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.OTHER_DAY,
+    ]);
+  });
+
+  test('marks an earlier vote of the same user as replaced', () => {
+    // An voted twice, the second time under a differently cased name
+    const votes = [vote(AN, PHO, '09:00'), vote(AN_CAPITALISED, COM_TAM, '10:00')];
+
+    expect(getVoteStatuses(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.REPLACED,
+      VoteStatus.COUNTED,
+    ]);
+  });
+
+  test.each(BLANK_NAMES)('marks a vote as blank when the meal or username is %s', (_, name) => {
+    // Nothing visible in either field
+    const votes = [vote(AN, name, '09:00'), vote(name, PHO, '09:30')];
+
+    expect(getVoteStatuses(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.BLANK,
+      VoteStatus.BLANK,
+    ]);
+  });
+
+  test('prefers blank over other day and late', () => {
+    // A blank meal, cast late on Tuesday
+    const votes: Vote[] = [{ user: AN, meal: SPACES, at: TUESDAY_LATE }];
+
+    expect(getVoteStatuses(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual([VoteStatus.BLANK]);
+  });
+
+  test('prefers other day over late', () => {
+    // A late vote from Tuesday
+    expect(getVoteStatuses([voteAt(TUESDAY_LATE)], OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.OTHER_DAY,
+    ]);
+  });
+
+  test('prefers late over replaced', () => {
+    // A late vote followed by a later, also late, vote of the same user
+    const votes = [vote(AN, PHO, '11:10'), vote(AN, COM_TAM, '11:20'), vote(AN, BUN_CHA, '10:00')];
+
+    expect(getVoteStatuses(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.LATE,
+      VoteStatus.LATE,
+      VoteStatus.COUNTED,
+    ]);
+  });
+
+  test('keeps an earlier vote counted when the later one is late or blank', () => {
+    // Neither a late nor a blank vote replaces a real one
+    const votes = [vote(AN, PHO, '09:00'), vote(AN, COM_TAM, '11:30'), vote(AN, SPACES, '10:00')];
+
+    expect(getVoteStatuses(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.COUNTED,
+      VoteStatus.LATE,
+      VoteStatus.BLANK,
+    ]);
+  });
+
+  test('never marks a vote as other day when no date is given', () => {
+    // Without a selected day, Tuesday's vote is judged on time alone
+    expect(getVoteStatuses([voteAt(TUESDAY_ON_TIME)], OFFICE_CONFIG)).toEqual([
+      VoteStatus.COUNTED,
+    ]);
+  });
+
+  test.each(MALFORMED_TIMES)('does not count a vote cast at %j, without throwing', (at) => {
+    // A vote with no real time is on no date and never on time, so it never counts
+    const votes = [voteAt(at), vote(BINH, COM_TAM, '10:00')];
+
+    expect(getVoteStatuses(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.OTHER_DAY,
+      VoteStatus.COUNTED,
+    ]);
+    expect(tallyVotes(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual({ [COM_TAM]: 1 });
+  });
+
+  test('counts the later row when a user votes twice at the same instant', () => {
+    // Same timestamp: the row further down the export wins, like in the tally
+    const votes = [vote(AN, PHO, '10:00'), vote(AN, COM_TAM, '10:00')];
+
+    expect(getVoteStatuses(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.REPLACED,
+      VoteStatus.COUNTED,
+    ]);
+  });
+
+  test('counts a vote cast exactly at the cut-off', () => {
+    // The cut-off minute itself is still on time
+    expect(getVoteStatuses([vote(AN, PHO, '11:00')], OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.COUNTED,
+    ]);
+  });
+
+  test.each(SHIPPED_DAYS)('agrees with the counted votes of the shipped %s export', (day) => {
+    // A vote is counted exactly when the tally counts it
+    const votes = getVoteExport(day);
+    const statuses = getVoteStatuses(votes);
+    const counted = votes.filter((_, index) => statuses[index] === VoteStatus.COUNTED);
+
+    expect(counted).toEqual(selectCountedVotes(votes));
   });
 });

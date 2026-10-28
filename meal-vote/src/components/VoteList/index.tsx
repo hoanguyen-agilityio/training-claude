@@ -3,10 +3,10 @@ import clsx from 'clsx';
 
 // Utils
 import { formatOfficeTime } from '@/utils/format-time';
-import { selectCountedVotes } from '@/utils/vote-tally';
+import { getVoteStatuses } from '@/utils/vote-tally';
 
 // Types
-import { BaseVariant, type Vote, type VotingConfig } from '@/types';
+import { BaseVariant, VoteStatus, type Vote, type VotingConfig } from '@/types';
 
 // Styles
 import './styles/vote-list.css';
@@ -20,8 +20,17 @@ const variantTheme = {
     cell: 'vote-list-cell',
     meal: 'vote-list-meal',
     counted: 'vote-list-counted',
-    late: 'vote-list-late',
+    notCounted: 'vote-list-not-counted',
   },
+};
+
+// What the Counted cell says: "Yes", or the one reason the vote did not count
+const STATUS_LABELS: Record<VoteStatus, string> = {
+  [VoteStatus.COUNTED]: 'Yes',
+  [VoteStatus.BLANK]: 'Blank',
+  [VoteStatus.OTHER_DAY]: 'Other day',
+  [VoteStatus.LATE]: 'Late',
+  [VoteStatus.REPLACED]: 'Replaced',
 };
 
 interface VoteListProps {
@@ -39,7 +48,7 @@ export const VoteList = ({
   variant = BaseVariant.PRIMARY,
 }: VoteListProps) => {
   const theme = variantTheme[variant];
-  const countedVotes = new Set(selectCountedVotes(votes, config, date));
+  const statuses = getVoteStatuses(votes, config, date);
 
   return (
     <section aria-label="Votes" className={theme.root}>
@@ -55,7 +64,8 @@ export const VoteList = ({
         </thead>
         <tbody>
           {votes.map((vote, index) => {
-            const counted = countedVotes.has(vote);
+            const status = statuses[index];
+            const counted = status === VoteStatus.COUNTED;
 
             return (
               // A user can appear on several rows, so the row position is the only stable key
@@ -63,8 +73,8 @@ export const VoteList = ({
                 <td className={theme.cell}>{vote.user}</td>
                 <td className={clsx(theme.cell, theme.meal)}>“{vote.meal}”</td>
                 <td className={theme.cell}>{formatOfficeTime(vote.at)}</td>
-                <td className={clsx(theme.cell, counted ? theme.counted : theme.late)}>
-                  {counted ? 'Yes' : 'No'}
+                <td className={clsx(theme.cell, counted ? theme.counted : theme.notCounted)}>
+                  {STATUS_LABELS[status]}
                 </td>
               </tr>
             );

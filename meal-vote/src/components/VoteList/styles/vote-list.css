@@ -26,6 +26,6 @@
   @apply font-semibold text-kitchen-success;
 }
 
-.vote-list-late {
+.vote-list-not-counted {
   @apply font-semibold text-kitchen-danger;
 }

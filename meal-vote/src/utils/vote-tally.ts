@@ -2,7 +2,7 @@
 import votingConfig from '@/config/voting.json';
 
 // Types
-import type { Vote, VoteTally, VotingConfig, Winner } from '@/types';
+import { VoteStatus, type Vote, type VoteTally, type VotingConfig, type Winner } from '@/types';
 
 const MINUTES_IN_DAY = 24 * 60;
 const MS_IN_HOUR = 60 * 60 * 1000;
@@ -37,15 +37,37 @@ export const isOnTime = (
   return (local + MINUTES_IN_DAY) % MINUTES_IN_DAY <= hours * 60 + minutes;
 };
 
-/** A vote belongs to a day only if it was cast on that date ("YYYY-MM-DD") in office local time. */
+/**
+ * A vote belongs to a day only if it was cast on that date ("YYYY-MM-DD") in office local time.
+ * A vote with no real time belongs to no day.
+ */
 export const isOnDate = (
   vote: Vote,
   date: string,
   { utcOffsetHours }: VotingConfig = votingConfig,
 ): boolean => {
-  const officeTime = new Date(Date.parse(vote.at) + utcOffsetHours * MS_IN_HOUR);
+  const castAt = Date.parse(vote.at);
+  if (Number.isNaN(castAt)) return false;
+  const officeTime = new Date(castAt + utcOffsetHours * MS_IN_HOUR);
 
   return officeTime.toISOString().slice(0, 10) === date;
+};
+
+/**
+ * Why a vote can never count, whatever else the user sent: blank, then other day (only when a
+ * date is given), then late. Undefined when the vote is eligible. selectCountedVotes and
+ * getVoteStatuses both use it, so the list can never give a reason the tally does not apply.
+ */
+const getSkipReason = (
+  vote: Vote,
+  config: VotingConfig,
+  date?: string,
+): VoteStatus | undefined => {
+  if (!hasVisibleText(vote.meal) || !hasVisibleText(vote.user)) return VoteStatus.BLANK;
+  if (date !== undefined && !isOnDate(vote, date, config)) return VoteStatus.OTHER_DAY;
+  if (!isOnTime(vote, config)) return VoteStatus.LATE;
+
+  return undefined;
 };
 
 /**
@@ -64,9 +86,7 @@ export const selectCountedVotes = (
   const latestByUser = new Map<string, Vote>();
 
   for (const vote of votes) {
-    if (!isOnTime(vote, config)) continue;
-    if (date !== undefined && !isOnDate(vote, date, config)) continue;
-    if (!hasVisibleText(vote.meal) || !hasVisibleText(vote.user)) continue;
+    if (getSkipReason(vote, config, date) !== undefined) continue;
     const key = toUserKey(vote.user);
     const current = latestByUser.get(key);
     if (!current || Date.parse(vote.at) >= Date.parse(current.at)) {
@@ -75,6 +95,25 @@ export const selectCountedVotes = (
   }
 
   return votes.filter((vote) => latestByUser.get(toUserKey(vote.user)) === vote);
+};
+
+/**
+ * Each vote's status, in export order: counted, or the one reason it was not. An eligible
+ * vote that does not count was replaced by a later one. "Counted" comes from
+ * selectCountedVotes, so the list can never disagree with the tally.
+ */
+export const getVoteStatuses = (
+  votes: Vote[],
+  config: VotingConfig = votingConfig,
+  date?: string,
+): VoteStatus[] => {
+  const countedVotes = new Set(selectCountedVotes(votes, config, date));
+
+  return votes.map(
+    (vote) =>
+      getSkipReason(vote, config, date) ??
+      (countedVotes.has(vote) ? VoteStatus.COUNTED : VoteStatus.REPLACED),
+  );
 };
 
 export const tallyVotes = (
