@@ -37,13 +37,18 @@ export const isOnTime = (
   return (local + MINUTES_IN_DAY) % MINUTES_IN_DAY <= hours * 60 + minutes;
 };
 
-/** A vote belongs to a day only if it was cast on that date ("YYYY-MM-DD") in office local time. */
+/**
+ * A vote belongs to a day only if it was cast on that date ("YYYY-MM-DD") in office local time.
+ * A vote with no real time belongs to no day.
+ */
 export const isOnDate = (
   vote: Vote,
   date: string,
   { utcOffsetHours }: VotingConfig = votingConfig,
 ): boolean => {
-  const officeTime = new Date(Date.parse(vote.at) + utcOffsetHours * MS_IN_HOUR);
+  const castAt = Date.parse(vote.at);
+  if (Number.isNaN(castAt)) return false;
+  const officeTime = new Date(castAt + utcOffsetHours * MS_IN_HOUR);
 
   return officeTime.toISOString().slice(0, 10) === date;
 };

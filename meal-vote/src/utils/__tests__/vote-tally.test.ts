@@ -50,11 +50,13 @@ const PERSIAN_NAME_WITHOUT_JOINER = 'میخواهم';
 const AN = 'an';
 const AN_CAPITALISED = 'An';
 const AN_PADDED = ' an ';
+const BINH = 'binh';
 
 const MONDAY = '2026-10-12';
 const WEDNESDAY = '2026-10-14';
 const TUESDAY_ON_TIME = '2026-10-13T10:00:00+07:00';
 const TUESDAY_LATE = '2026-10-13T11:30:00+07:00';
+const MALFORMED_TIMES = ['', 'garbage'];
 const SHIPPED_DAYS: VoteDay[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
 const voteAt = (at: string): Vote => ({ user: AN, meal: PHO, at });
@@ -380,6 +382,34 @@ describe('getVoteStatuses', () => {
   test('never marks a vote as other day when no date is given', () => {
     // Without a selected day, Tuesday's vote is judged on time alone
     expect(getVoteStatuses([voteAt(TUESDAY_ON_TIME)], OFFICE_CONFIG)).toEqual([
+      VoteStatus.COUNTED,
+    ]);
+  });
+
+  test.each(MALFORMED_TIMES)('does not count a vote cast at %j, without throwing', (at) => {
+    // A vote with no real time is on no date and never on time, so it never counts
+    const votes = [voteAt(at), vote(BINH, COM_TAM, '10:00')];
+
+    expect(getVoteStatuses(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.OTHER_DAY,
+      VoteStatus.COUNTED,
+    ]);
+    expect(tallyVotes(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual({ [COM_TAM]: 1 });
+  });
+
+  test('counts the later row when a user votes twice at the same instant', () => {
+    // Same timestamp: the row further down the export wins, like in the tally
+    const votes = [vote(AN, PHO, '10:00'), vote(AN, COM_TAM, '10:00')];
+
+    expect(getVoteStatuses(votes, OFFICE_CONFIG, WEDNESDAY)).toEqual([
+      VoteStatus.REPLACED,
+      VoteStatus.COUNTED,
+    ]);
+  });
+
+  test('counts a vote cast exactly at the cut-off', () => {
+    // The cut-off minute itself is still on time
+    expect(getVoteStatuses([vote(AN, PHO, '11:00')], OFFICE_CONFIG, WEDNESDAY)).toEqual([
       VoteStatus.COUNTED,
     ]);
   });
