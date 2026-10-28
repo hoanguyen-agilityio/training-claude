@@ -18,6 +18,15 @@ export interface VotingConfig {
   utcOffsetHours: number;
 }
 
+/** Why a vote did or did not count; when several reasons apply, the first listed wins */
+export enum VoteStatus {
+  COUNTED = 'counted',
+  BLANK = 'blank',
+  OTHER_DAY = 'other-day',
+  LATE = 'late',
+  REPLACED = 'replaced',
+}
+
 export type VoteTally = Record<string, number>;
 
 export interface Winner {

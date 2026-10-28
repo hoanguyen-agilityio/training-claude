@@ -2,7 +2,7 @@
 import votingConfig from '@/config/voting.json';
 
 // Types
-import type { Vote, VoteTally, VotingConfig, Winner } from '@/types';
+import { VoteStatus, type Vote, type VoteTally, type VotingConfig, type Winner } from '@/types';
 
 const MINUTES_IN_DAY = 24 * 60;
 const MS_IN_HOUR = 60 * 60 * 1000;
@@ -75,6 +75,27 @@ export const selectCountedVotes = (
   }
 
   return votes.filter((vote) => latestByUser.get(toUserKey(vote.user)) === vote);
+};
+
+/**
+ * Each vote's status, in export order: counted, or the one reason it was not, checked as
+ * blank, then other day (only when a date is given), then late, then replaced. "Counted" comes
+ * from selectCountedVotes, so the list can never disagree with the tally.
+ */
+export const getVoteStatuses = (
+  votes: Vote[],
+  config: VotingConfig = votingConfig,
+  date?: string,
+): VoteStatus[] => {
+  const countedVotes = new Set(selectCountedVotes(votes, config, date));
+
+  return votes.map((vote) => {
+    if (!hasVisibleText(vote.meal) || !hasVisibleText(vote.user)) return VoteStatus.BLANK;
+    if (date !== undefined && !isOnDate(vote, date, config)) return VoteStatus.OTHER_DAY;
+    if (!isOnTime(vote, config)) return VoteStatus.LATE;
+
+    return countedVotes.has(vote) ? VoteStatus.COUNTED : VoteStatus.REPLACED;
+  });
 };
 
 export const tallyVotes = (
